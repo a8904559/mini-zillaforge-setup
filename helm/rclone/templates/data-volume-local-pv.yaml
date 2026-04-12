@@ -1,0 +1,21 @@
+{{- range $dataSource := .Values.dataSources }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $.Values.app }}-{{ $dataSource.name }}-local-pv
+spec:
+  storageClassName: {{ $.Values.app }}-{{ $dataSource.name }}-local-volume
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  local:
+    path: {{ $dataSource.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: Exists
+---
+{{- end }}

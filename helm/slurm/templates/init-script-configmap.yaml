@@ -20,7 +20,7 @@ data:
     # Append dynamic node configuration to slurm.conf
     cat >> /etc/slurm/slurm.conf << 'EOF'
     {{- range $index := until (int .Values.computeNodes.count) }}
-    NodeName=c{{ add $index 1 }} CPUs=2 RealMemory=1000 State=UNKNOWN
+    NodeName=c{{ add $index 1 }} CPUs=2 RealMemory=2048 State=UNKNOWN
     {{- end }}
     PartitionName=normal Nodes={{ range $index := until (int .Values.computeNodes.count) }}{{ if ne $index 0 }},{{ end }}c{{ add $index 1 }}{{ end }} Default=YES MaxTime=INFINITE State=UP
     EOF

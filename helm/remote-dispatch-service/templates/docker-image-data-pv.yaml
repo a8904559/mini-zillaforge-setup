@@ -1,0 +1,20 @@
+{{- if .Values.volume.docker_image_data_path }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.app }}-docker-image-data-pv
+spec:
+  storageClassName: {{ .Values.app }}-docker-image-data-volume
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteMany
+  local:
+    path: {{ .Values.volume.docker_image_data_path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: Exists
+{{- end }}

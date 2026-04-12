@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  remote-dispatch-service.yaml: |
+{{- toYaml .Values.core.configmap | nindent 4 }}
+  rds-migrator.yaml: |
+{{- toYaml .Values.migrator.configmap | nindent 4 }}
+  rds-scheduler.yaml: |
+{{- toYaml .Values.scheduler.configmap | nindent 4 }}

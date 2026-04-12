@@ -1,0 +1,47 @@
+app: rclone
+images:
+  rclone: rclone/rclone
+
+replicas: 1
+
+dataSources:
+  - name: des
+    type: local
+    path: /trusted-cloud/normal/storage
+    mountPath: /trusted-cloud/normal/storage
+
+systemSource:
+  type: local
+  path: 
+  mountPath: 
+
+service:
+  enableNodePort: false
+  externalIPs: []
+  http-rc:
+    port:
+    targetPort:
+    nodePort:
+
+
+rcloneConfiguration: |-
+  [slurm]
+  type = sftp
+  host = 
+  user = 
+  key_file = 
+
+  [slurm2]
+  type = sftp
+  host = 
+  user = 
+  key_file = 
+
+  [des]
+  type = local
+
+  [drs]
+  type = local
+
+  [crm]
+  type = local

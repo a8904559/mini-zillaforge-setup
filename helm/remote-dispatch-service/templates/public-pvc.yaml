@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app }}-public-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .Values.app }}-public-volume
+  resources:
+    requests:
+      storage: 5Gi

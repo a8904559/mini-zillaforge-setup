@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.app }}-stateful
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  serviceName: {{ .Values.app }}-headless
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+    spec:
+      containers:
+      - name: rclone
+        image: {{ .Values.images.rclone }}
+        {{- if .Values.entrypoint }}
+        command:
+{{ toYaml .Values.entrypoint | indent 8 }}
+        {{- else }}
+        command: ["rclone", "rcd", "--rc-addr", ":{{ .Values.service.http_rc.port }}", "--rc-no-auth", "--rc-serve"]
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.service.http_rc.port }}
+          name: http-rc
+        volumeMounts:
+        {{- range $dataSource := .Values.dataSources }}
+        - name: {{ $dataSource.name }}
+          mountPath: {{ $dataSource.mountPath }}
+        {{- end }}
+        - name: system
+          mountPath: {{ .Values.systemSource.mountPath }}
+        - name: rclone-config
+          mountPath: /root/.config/rclone/rclone.conf
+          subPath: rclone.conf
+      volumes:
+      {{- range $dataSource := .Values.dataSources }}
+      - name: {{ $dataSource.name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Values.app }}-{{ $dataSource.name }}-pvc
+      {{- end }}
+      - name: system
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-system-pvc
+      - name: rclone-config
+        configMap:
+          name: {{ .Values.app }}-config

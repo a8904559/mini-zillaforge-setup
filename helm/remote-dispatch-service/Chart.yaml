@@ -1,0 +1,4 @@
+apiVersion: v2
+name: rds
+version: 1.0.8
+appVersion: "1.0.8-1"

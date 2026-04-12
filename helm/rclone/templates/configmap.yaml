@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  rclone.conf: |
+{{ .Values.rcloneConfiguration | indent 4 }}

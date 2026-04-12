@@ -1,0 +1,315 @@
+app: remote-dispatch-service
+
+images:
+  rds: Zillaforge/remote-dispatch-service:1.0.8
+  debugger: Zillaforge/debugger:1.0.2
+  docker: docker:dind
+  eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
+  filebeat: docker.io/elastic/filebeat:8.14.3
+
+core:
+  enabled: true
+  configmap:
+    version: 1.0.8
+    kind: RemoteDispatchService
+    RemoteDispatchService:
+      instance: RemoteDispatchService-TrustCloud
+      developer: true
+      grpc:
+        host: 0.0.0.0:5108
+        unix_socket:
+          path: /run/RemoteDispatchService.sock
+          conn_count: 20
+      http:
+        host: 0.0.0.0:8108
+      logger:
+        system_log:
+          path: /var/log/ASUS/
+          mode: debug
+          show_in_console: true
+        access_log:
+          path: /var/log/ASUS/
+        event_consume_log:
+          path: /var/log/ASUS/
+      tracer:
+        enable: false
+        host: http://jaeger-service:14268/api/traces
+        timeout: 10
+      scopes:
+        allow_namespaces: ["public"]
+        allow_providers: ["LabSlurm","TrustAgent1"]
+        allow_partitions: ["normal"]
+        availability_district: "tw-tc-ad1"
+    dispatch:
+      max_workers: 10
+      max_capacity: 1000
+      migrator_rules:
+        default:
+          input: []
+          output: []
+        public:
+          input: ["crm", "dss-public"]
+          output: ["dss-public"]
+        # private:
+        #   input: ["crm", "dss-private"]
+        #   output: ["dss-private"]
+      provider_rules:
+        default: []
+        public: ["LabSlurm","TrustAgent1"]
+        # private: ["LabSlurm","TrustAgent2"]
+      resources:
+      - name: dss-public
+        type: local
+        path: /trusted-cloud/normal/storage
+      # - name: dss-private
+      #   type: local
+      #   path: /trusted-cloud/sensitivity/storage
+      - name: crm
+        type: registry
+        host: harbor-core:80
+        username: system@ci.asus.com
+        password: "system"
+        docker_daemon_socket_path: /run/docker/docker.sock
+        path: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/images
+      providers:
+      - name: LabSlurm
+        username: root
+        host: hostip:30022 ######################
+        password: ""
+        partitions: ["normal"]
+        private_key: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519 #labslurm.key
+        sudo_mode: false
+        transmission:
+          type: sftp
+          host: hostip:30022
+          path: /data
+        submission:
+          type: restful/cli
+          username: root
+          usergroup: root
+          slurm_api_host: http://slurmrestd.slurm.svc.cluster.local:6820
+          version: "v0.0.40"
+          timeout: 20
+          token_ttl: 86400
+          pre_script: ""
+      - name: TrustAgent1
+        username: root ###
+        host: hostip:30022  ####
+        password: ""
+        partitions: ["normal"]
+        private_key: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
+        sudo_mode: false
+        transmission:
+          type: sftp
+          host: hostip:30022 ####
+          path: /data
+        submission:
+          type: restful/cli
+          username: root ###
+          usergroup: root ###
+          slurm_api_host: http://slurmrestd.slurm.svc.cluster.local:6820
+          version: "v0.0.40"
+          timeout: 60
+          token_ttl: 86400
+          pre_script: ""
+      system_path: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+    storage:
+      provider: mariadb
+      mariadb:
+        host: mariadb-galera:3306
+        account: root
+        password: password
+        name: rds
+        timeout: 5
+        max_open_conns: 150
+        conn_max_lifetime: 10
+        max_idle_conns: 150
+    authentication:
+      service: myiam
+    event_consume:
+      service: my_redis_sentinel
+      channels:
+      - FromIAM
+    cache:
+      service: my_redis_sentinel
+    message_queue:
+      event:
+        queues: ["remote-dispatch-service"]
+      provider: rabbitmq
+      rabbitmq:
+        account: user
+        password: password
+        host: rabbitmq:5672
+        manage_host: rabbitmq:15672
+        timeout: 5
+        rpc_timeout: 10
+        vhost: "/"
+        operation_connection_num: 2
+        channel_num: 1
+        replica_num: 0
+        consumer_connection_num: 1
+    services:
+      - name: myiam
+        kind: iam
+        hosts:
+          - iam-service:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+    event_publish:
+      plugins:
+      - name: EventPublishPlugin
+        type: grpc
+        binary_path: "/var/lib/ASUS/rds/eventpublish/eventpublishplugin"
+        config_path: "/var/lib/ASUS/rds/eventpublish/config/eventpublishplugin.yaml"
+        socket_path: /run/eventpublishplugin.sock
+        start_cmd_args:
+          --redis-channel: FromRDS
+    rclone:
+      hosts:
+      - "rclone-headless.default.svc.cluster.local:5572"
+    metering_service:
+      account: user
+      password: password
+      host: rabbitmq:5672
+      manage_host: rabbitmq:15672
+      timeout: 5
+      rpc_timeout: 10
+      vhost: "/"
+      operation_connection_num: 2
+      channel_num: 1
+      replica_num: 0
+      consumer_connection_num: 1
+    littlebell:
+      host: http://simple-notification-service-service:8092
+      region: default
+      credential:
+        project_id: 14735dfa-5553-46cc-b4bd-405e711b223f 
+        user_id: 00000000-0000-0000-0000-000000000001 
+      arn: arn:aws:sns:default:14735dfa-5553-46cc-b4bd-405e711b223f:lbm-svc-event-publish-topic
+
+migrator:
+  enabled: true
+  configmap:
+    version: 1.0.8
+    kind: RemoteDispatchServiceMigrator
+    RemoteDispatchServiceMigrator:
+      instance: RemoteDispatchServiceMigrator-TrustCloud
+      core_grpc:
+        hosts: ["remote-dispatch-service-core-service:5108"]
+        tls:
+          enable: false
+          cert_path: /root/server-csr/RDS.pem
+        connection_per_host: 3
+scheduler:
+  enabled: true
+  configmap:
+    version: 1.0.8
+    kind: RemoteDispatchServiceScheduler
+    RemoteDispatchServiceScheduler:
+      instance: RemoteDispatchServiceScheduler-TrustCloud
+      core_grpc:
+        hosts: ["remote-dispatch-service-core-service:5108"]
+        tls:
+          enable: false
+          cert_path: /root/server-csr/RDS.pem
+        connection_per_host: 3
+      tasks:
+        sync_resources:
+          cron_expression: "0 */10 * * * * *"
+        check_resource_expired:
+          cron_expression: "* * * * * * *"
+        sync_capacity:
+          cron_expression: "*/5 * * * * * *"
+        update_job_status:
+          cron_expression: "0 * * * * * *"
+        job_metering:
+          cron_expression: "0 0 * * * * *"
+          metering_service:
+            exchange: mts
+            routing_key: "rds-job"
+        resource_metering:
+          cron_expression: "0 0 * * * * *"
+          metering_service:
+            exchange: mts
+            routing_key: "rds-resource"
+    event_consume:
+      service: my_redis_sentinel
+      channels:
+      - FromRDS
+
+eventpublish:
+  eventpublishPlugin:
+    plugin:
+      name: EventPublishPlugin
+      instance: RemoteDispatchService-EventPublishPlugin-TrustCloud
+      version: 0.1.2
+      socket_path: "/run/eventpublishplugin.sock"
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        event_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+      tracer:
+        enable: true
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+      service: my_redis_sentinel
+      services:
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+
+service:
+  core:
+    enableNodePort: false
+    externalIPs: []
+    grpc:
+      port: 5108
+      nodePort: 31108
+    http:
+      port: 8108
+      nodePort: 32108
+
+volume:
+  system_path: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+  public_path: /trusted-cloud/normal/storage
+  #private_path: /trusted-cloud/sensitivity/storage
+  docker_image_data_path:  /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/docker
+
+harbor:
+  host: harbor-core:80
+
+serviceMonitor:
+  enable: false
+
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+#   preset: balanced
+  username: "elastic"
+  password: "password"
+#   ssl:
+#     enabled: false
+#     verification_mode: none

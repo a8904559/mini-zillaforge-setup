@@ -60,6 +60,10 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/harbor/values-trustedcloud.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/crm.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/harborportal.yaml
 
+# Update configuration files with IP
+sed -i "s/hostip/$HOSTIP/g" ./helm/remote-dispatch-service/values-trustedcloud.yaml
+sed -i "s/hostip/$HOSTIP/g" ./helm/rclone/values-trustedcloud.yaml
+
 echo "✅ Configuration files updated"
 
 echo "📝 Patching Traefik service to use specific NodePort to avoid conflicts..."
@@ -368,6 +372,19 @@ helm install crm-rw ./helm/container-registry-management -f ./helm/container-reg
 kubectl wait --for=condition=available deployment/container-registry-management-rw-proxy-deployment --timeout=1200s
 echo "✅ CRM  installed"
 
+
+#RDS
+helm install rds ./helm/remote-dispatch-service -f ./helm/remote-dispatch-service/values-trustedcloud.yaml
+kubectl wait --for=condition=available deployment/remote-dispatch-service-core-deployment --timeout=1200s
+echo "✅ RDS  installed"
+
+#rclone
+sudo mkdir -p /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys
+sudo cp ~/.ssh/id_ed25519 /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
+sudo chmod 600 /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
+helm install rclone ./helm/rclone -f ./helm/rclone/values-trustedcloud.yaml
+kubectl wait --for=condition=available deployment/rclone-core-deployment --timeout=1200s
+echo "✅ rclone  installed"
 
 
 echo "=========================================="

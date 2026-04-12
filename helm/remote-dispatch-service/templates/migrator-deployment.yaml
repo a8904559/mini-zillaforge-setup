@@ -1,0 +1,69 @@
+{{- if .Values.migrator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-migrator-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-migrator-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-migrator-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      serviceAccountName: "pegasus-system-admin"
+      automountServiceAccountToken: true
+      containers:
+      - name: {{ .Values.app }}
+        image: {{ .Values.images.rds }}
+        imagePullPolicy: IfNotPresent 
+        command: ["./RemoteDispatchService", "-m", "/etc/ASUS/rds-migrator.yaml", "-c", "/etc/ASUS/remote-dispatch-service.yaml","migrator","start"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: docker-socket-volume
+          mountPath: /run/docker
+        - name: system-volume
+          mountPath: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+      - name: docker
+        image: {{ .Values.images.docker }}
+        args: ["--insecure-registry", {{ .Values.harbor.host }}]
+        volumeMounts:
+        - name: docker-socket-volume
+          mountPath: /run
+        {{- if .Values.volume.docker_image_data_path }}
+        - name: docker-image-data-volume
+          mountPath: /var/lib/docker
+        {{- end }}
+        securityContext:
+          privileged: true
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      - name: docker-socket-volume
+        emptyDir: {}
+      - name: system-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-system-pvc
+      {{- if .Values.volume.docker_image_data_path }}
+      - name: docker-image-data-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-docker-image-data-pvc
+      {{- end }}
+{{- end }}

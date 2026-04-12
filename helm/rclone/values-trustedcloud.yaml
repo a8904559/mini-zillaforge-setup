@@ -1,0 +1,68 @@
+app: rclone
+images:
+  rclone: rclone/rclone
+
+replicas: 2
+
+entrypoint: 
+  - rclone
+  - rcd
+  - "--rc-addr"
+  - ":5572"
+  - "--rc-no-auth"
+  - "--rc-serve"
+  - "--verbose"
+  - "--stats"
+  - "10s"
+  - "--stats-log-level"
+  - "INFO"
+
+dataSources:
+- name: dss-public
+  type: local
+  path: /trusted-cloud/normal/storage
+  mountPath: /trusted-cloud/normal/storage
+
+systemSource:
+  type: local
+  path: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+  mountPath: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+  
+
+service:
+  enableNodePort: false
+  externalIPs: []
+  http_rc:
+    port: 5572
+    targetPort: 5572
+    nodePort: null
+
+
+rcloneConfiguration: |-
+  [LabSlurm]
+  type = sftp
+  host = $HOSTIP
+  port = 30022
+  user = root
+  key_file = /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
+  shell_type= unix
+  md5sum_command= md5sum
+  sha1sum_command= sha1sum
+  use_fstat = true
+
+  [dss-public]
+  type = local
+
+  [crm]
+  type = local
+
+  [TrustAgent1]
+  type = sftp
+  host = $HOSTIP
+  port = 30022
+  user = root
+  key_file = /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
+  shell_type= unix
+  md5sum_command= md5sum
+  sha1sum_command= sha1sum
+  use_fstat = true

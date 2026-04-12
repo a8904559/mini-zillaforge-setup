@@ -1,0 +1,13 @@
+{{- if .Values.volume.docker_image_data_path }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app }}-docker-image-data-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .Values.app }}-docker-image-data-volume
+  resources:
+    requests:
+      storage: 30Gi
+{{- end }}

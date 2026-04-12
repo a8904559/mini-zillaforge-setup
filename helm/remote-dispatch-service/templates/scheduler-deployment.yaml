@@ -1,0 +1,46 @@
+{{- if .Values.scheduler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-scheduler-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-scheduler-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-scheduler-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}
+        image: {{ .Values.images.rds }}
+        imagePullPolicy: IfNotPresent 
+        command: ["./RemoteDispatchService", "-s", "/etc/ASUS/rds-scheduler.yaml", "-c", "/etc/ASUS/remote-dispatch-service.yaml","scheduler","start"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: system-volume
+          mountPath: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      - name: system-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-system-pvc
+{{- end }}

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.app }}-system-pv
+spec:
+  storageClassName: {{ .Values.app }}-system-volume
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  local:
+    path: {{ .Values.volume.system_path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: Exists

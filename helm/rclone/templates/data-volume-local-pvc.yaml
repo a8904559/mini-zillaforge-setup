@@ -1,0 +1,14 @@
+{{- range $dataSource := .Values.dataSources }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Values.app }}-{{ $dataSource.name }}-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ $.Values.app }}-{{ $dataSource.name }}-local-volume
+  resources:
+    requests:
+      storage: 5Gi
+---
+{{- end }}
