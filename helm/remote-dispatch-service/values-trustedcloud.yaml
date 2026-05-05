@@ -293,7 +293,7 @@ service:
 volume:
   system_path: /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds
   public_path: /trusted-cloud/normal/storage
-  #private_path: /trusted-cloud/sensitivity/storage
+  private_path: /trusted-cloud/sensitivity/storage
   docker_image_data_path:  /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/docker
 
 harbor:
