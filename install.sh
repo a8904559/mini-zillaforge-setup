@@ -374,6 +374,7 @@ echo "✅ CRM  installed"
 
 
 #RDS
+sudo mkdir -p /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/docker
 helm install rds ./helm/remote-dispatch-service -f ./helm/remote-dispatch-service/values-trustedcloud.yaml
 kubectl wait --for=condition=available deployment/remote-dispatch-service-core-deployment --timeout=1200s
 echo "✅ RDS  installed"
