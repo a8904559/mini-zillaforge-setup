@@ -41,7 +41,7 @@ service:
 rcloneConfiguration: |-
   [LabSlurm]
   type = sftp
-  host = $HOSTIP
+  host = hostip
   port = 30022
   user = root
   key_file = /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
@@ -58,7 +58,7 @@ rcloneConfiguration: |-
 
   [TrustAgent1]
   type = sftp
-  host = $HOSTIP
+  host = hostip
   port = 30022
   user = root
   key_file = /trusted-cloud/normal/site-storage/14735dfa-5553-46cc-b4bd-405e711b223f/rds/keys/id_ed25519
