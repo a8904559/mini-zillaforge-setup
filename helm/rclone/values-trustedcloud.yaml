@@ -2,7 +2,7 @@ app: rclone
 images:
   rclone: rclone/rclone
 
-replicas: 2
+replicas: 1
 
 entrypoint: 
   - rclone
